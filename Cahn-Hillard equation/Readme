@@ -1,7 +1,7 @@
 Solution of Cahn-Hillard equation using finite difference method in 2D.  Python 3
 
 
-This was a simple numerical analysis project. I used explicit Euler and AB2 time integration methods and 
+This was a simple numerical analysis project. I used explicit Euler and AB2 time integration method, and 
 central difference scheme (5 point stencil) for space discretization.
 Feel free to play with it. 
 I would be great if you can implement some implicit schemes such as Keller Box or even simple Backward Euler.
