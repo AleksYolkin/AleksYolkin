@@ -1,0 +1,119 @@
+C     A. Elkin 2022 UMAT
+C     ABAQUS Subroutine for orthotropic elastic material
+C
+C---------------------------------------------------------------------------------------
+
+C Start of Base code, DO NOT change
+
+C---------------------------------------------------------------------------------------
+      SUBROUTINE UMAT(STRESS,STATEV,DDSDDE,SSE,SPD,SCD,
+     1 RPL,DDSDDT,DRPLDE,DRPLDT,
+     2 STRAN,DSTRAN,TIME,DTIME,TEMP,DTEMP,PREDEF,DPRED,CMNAME,
+     3 NDI,NSHR,NTENS,NSTATV,PROPS,NPROPS,COORDS,DROT,PNEWDT,
+     4 CELENT,DFGRD0,DFGRD1,NOEL,NPT,LAYER,KSPT,JSTEP,KINC)
+C
+
+      INCLUDE 'ABA_PARAM.INC'
+C
+      CHARACTER*80 CMNAME
+      DIMENSION STRESS(NTENS),STATEV(NSTATV),
+     1 DDSDDE(NTENS,NTENS),DDSDDT(NTENS),DRPLDE(NTENS),
+     2 STRAN(NTENS),DSTRAN(NTENS),TIME(2),PREDEF(1),DPRED(1),
+     3 PROPS(NPROPS),COORDS(3),DROT(3,3),DFGRD0(3,3),DFGRD1(3,3),
+     4 JSTEP(4)
+C---------------------------------------------------------------------------------------
+C End of Base code
+C---------------------------------------------------------------------------------------
+C---------------------------------------------------------------------------------------
+
+C Start of USER code
+C double precision E11
+
+
+        E11=PROPS(1)
+        E22=PROPS(2)
+        E33=PROPS(3)
+        v12=PROPS(4)
+        v13=PROPS(5)
+        v23=PROPS(6)
+        G12=PROPS(7)
+        G13=PROPS(8)
+        G23=PROPS(9)
+      !WRITE(*,*) 'Props =', PROPS  
+      !WRITE(*,*) 'E11=', E11 
+C Let's define Stiffness matrix ddsdde
+       
+C     Calculating coeff for stiffness matrix
+        v21=v12*E22/E11
+        v31=v13*E33/E11
+        v32=v23*E33/E22
+        !WRITE(*,*) 'v12*E2 =',v12*E22
+        !WRITE(*,*) 'v21 =',v21
+        !WRITE(*,*) 'v31 =',v31
+        !WRITE(*,*) 'v32 =',v32
+      
+      delta= 1 / (1-v12*v21-v23*v32-v31*v13-2*v21*v32*v13)
+C      WRITE(*,*) 'Coeff good delta =', delta 
+C           DDSDDE(NTENS,NTENS)
+C           Jacobian matrix of the constitutive model
+
+C           NTENS
+C           Size of the stress or strain component array (NDI + NSHR).
+
+C           NDI
+C           Number of direct stress components at this point.
+
+C           NSHR
+C           Number of engineering shear stress components at this point.
+    		
+C     Making zero all values
+      DO i=1, NTENS
+      DO j=1, NTENS
+          DDSDDE(j, i)=0.0
+      END DO
+      END DO
+
+C     Define stiffness values
+      DDSDDE(1,1)=E11*(1-v23*v32)*delta 
+      DDSDDE(2,2)=E22*(1-v31*v13)*delta
+      DDSDDE(3,3)=E33*(1-v12*v21)*delta
+      
+      DDSDDE(1,2)=E11*(v21+v31*v23)*delta
+      DDSDDE(1,3)=E11*(v31+v21*v32)*delta
+
+      DDSDDE(2,1)=DDSDDE(1,2)
+      DDSDDE(2,3)=E22*(v32+v31*v12)*delta
+      
+      DDSDDE(3,1)=DDSDDE(1,3)
+      DDSDDE(3,2)=DDSDDE(2,3)
+C     Check this in abaqus manual       
+      DDSDDE(4,4)=1*G12
+      DDSDDE(5,5)=1*G13
+      DDSDDE(6,6)=1*G23   
+      
+C      WRITE(*,*) 'DDSDDE good =', DDSDDE 
+C           Calculation of STRESSES 
+C
+C           STRESS(NTENS)
+C           This array is passed in as the stress tensor at the beginning of the increment and must be updated
+C           in this routine to be the stress tensor at the end of the increment.
+C      
+C           DSTRAN(NTENS)
+C           Array of strain increments.
+
+      DO i=1, NTENS
+      DO j=1, NTENS
+          STRESS(j)=STRESS(j)+DDSDDE(j, i)*DSTRAN(i)
+      END DO
+      END DO
+      
+C      WRITE(*,*) 'STRESS good' 
+C---------------------------------------------------------------------------------------
+
+C End of USER code
+
+C---------------------------------------------------------------------------------------
+
+
+      RETURN
+      END
